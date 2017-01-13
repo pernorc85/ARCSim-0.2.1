@@ -1,0 +1,113 @@
+Installation Instructions for ARCSim-0.2.1
+
+This article shows installation instructions for ARCSim-0.2.1 on Ubuntu 14.04 LTS on 64-bit OS.
+
+Follow the steps for successful installation:
+1) Open Terminal (Ctrl+ Alt+ T) to install required libraries
+
+2) Install Libraries:
+
+Type:
+
+#build-essentials
+sudo apt-get install build-essential 
+
+#g++ installation
+sudo apt-get install g++ 
+
+#update the packages
+sudo apt-get update 
+
+#installation of vim
+sudo apt-get install vim 
+
+#we need the ctags plugin of vim, install ctags
+sudo apt-get install exuberant-ctags 
+
+#update the packages
+sudo apt-get update 
+
+3) Now download the ARCSim-0.2.1.tgz package from the site.
+
+4) cd to the package directory and Extract the package
+
+tar xvf arcsim-0.2.1.tar.gz
+
+5) As required by the package, install the required libraries:
+
+#BLAS libraries
+sudo apt-get install libblas-dev libblas3gf
+
+#Atlas libraries
+sudo apt-get install libatlas-base-dev
+
+#Boost library
+sudo apt-get install libboost-all-dev
+
+#freeglut is an open source graphical programming interface
+sudo apt-get install freeglut3-dev
+
+#binutils library
+sudo apt-get install binutils-gold
+
+#GFORTRAN library
+sudo apt-get install gfortran
+
+#BLAS package
+sudo apt-get install libblas3gf
+
+sudo apt-get install libblas-doc
+
+sudo apt-get install libblas-dev
+
+#LAPACK package
+sudo apt-get install liblapack3gf
+
+sudo apt-get install liblapack-doc
+
+sudo apt-get install liblapack-dev
+
+#LIBPNG library
+sudo apt-get install libpng-dev
+
+#scons library
+sudo apt-get install scons
+
+6) After installation of all the libraries, go to arcsim folder
+
+cd arcsim-0.2.1/
+
+7) Go to dependencies and make
+
+cd dependencies/
+make
+
+8) This should make all the dependencies and running 'make' again will not do anything if it has build successfully . Now come back to arcsim-0.2.1 folder and make
+
+make
+
+9) This should make all the required dependencies, and running make again will not do anything.
+
+10) Go to the bin folder.
+
+cd bin
+ls
+
+11) This should show 'arcsim' in bin.
+
+12) Copy and paste that 'arcsim' file to arcsim-0.2.1 folder.
+
+13) Go back to arcsim-0.2.1 folder and run the simulator.
+
+./arcsim simulate conf/
+
+will display the 'json' files to simulate
+Run one of the file.
+
+./arcsim simulate conf/fold.json
+
+14) This will open a dialog box of simulation. Press spacebar to run the simulation.
+
+
+
+
