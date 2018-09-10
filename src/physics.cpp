@@ -371,7 +371,7 @@ void implicit_update (Cloth &cloth, const vector<Vec3> &fext,
     vector<Face*>::iterator face_it;
     int nn = mesh.nodes.size();
     // M Dv/Dt = F (x + Dx) = F (x + Dt (v + Dv))
-    // Dv = Dt (M - Dt2 F)i F (x + Dt v)
+    // therefore (M - Dt2 F) Dv = Dt F (x + Dt v)
     // A = M - Dt2 F
     // b = Dt F (x + Dt v)
     SpMat<Mat3x3> A(nn,nn);
