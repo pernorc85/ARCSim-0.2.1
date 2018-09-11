@@ -148,14 +148,14 @@ pair<Mat12x12,Vec12> bending_force (const Edge *edge) {
         return make_pair(Mat12x12(0), Vec12(0));
     double theta = dihedral_angle<s>(edge);
     double a = face0->a + face1->a;
-    Vec3 x0 = pos<s>(edge->n[0]),
-         x1 = pos<s>(edge->n[1]),
-         x2 = pos<s>(edge_opp_vert(edge, 0)->node),
-         x3 = pos<s>(edge_opp_vert(edge, 1)->node);
-    double h0 = distance(x2, x0, x1), h1 = distance(x3, x0, x1);
+    Vec3 p2 = pos<s>(edge->n[0]),
+         p3 = pos<s>(edge->n[1]);
+    Vec3 p0 = pos<s>(edge_opp_vert(edge, 0)->node),
+         p1 = pos<s>(edge_opp_vert(edge, 1)->node);
+    double h0 = distance(p0, p2, p3), h1 = distance(p1, p2, x3);
     Vec3 n0 = nor<s>(face0), n1 = nor<s>(face1);
-    Vec2 w_f0 = barycentric_weights(x2, x0, x1),
-         w_f1 = barycentric_weights(x3, x0, x1);
+    Vec2 w_f0 = barycentric_weights(p0, p2, p3),
+         w_f1 = barycentric_weights(p1, p2, p3);
     Vec12 dtheta = mat_to_vec(Mat3x4(-(w_f0[0]*n0/h0 + w_f1[0]*n1/h1),
                                      -(w_f0[1]*n0/h0 + w_f1[1]*n1/h1),
                                      n0/h0,
