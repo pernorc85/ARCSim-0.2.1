@@ -156,10 +156,11 @@ pair<Mat12x12,Vec12> bending_force (const Edge *edge) {
     Vec3 n0 = nor<s>(face0), n1 = nor<s>(face1);
     Vec2 w_f0 = barycentric_weights(p0, p2, p3),
          w_f1 = barycentric_weights(p1, p2, p3);
-    Vec12 dtheta = mat_to_vec(Mat3x4(-(w_f0[0]*n0/h0 + w_f1[0]*n1/h1),
-                                     -(w_f0[1]*n0/h0 + w_f1[1]*n1/h1),
-                                     n0/h0,
-                                     n1/h1));
+    Vec12 dtheta = mat_to_vec(Mat3x4(n0/h0,
+                                     n1/h1,
+                                     -(w_f0[0]*n0/h0 + w_f1[0]*n1/h1),
+                                     -(w_f0[1]*n0/h0 + w_f1[1]*n1/h1)
+                                    ));
     const BendingData &bend0 = (*::materials)[face0->label]->bending,
                       &bend1 = (*::materials)[face1->label]->bending;
     double ke = min(bending_stiffness(edge, 0, bend0),
@@ -264,10 +265,10 @@ void add_internal_forces (const Cloth &cloth, SpMat<Mat3x3> &A,
         if (!edge->adjf[0] || !edge->adjf[1])
             continue;
         pair<Mat12x12,Vec12> bendF = bending_force<s>(edge);
-        const Node *n0 = edge->n[0],
-                   *n1 = edge->n[1],
-                   *n2 = edge_opp_vert(edge, 0)->node,
-                   *n3 = edge_opp_vert(edge, 1)->node;
+        const Node *n0 = edge_opp_vert(edge, 0)->node,
+                   *n1 = edge_opp_vert(edge, 1)->node,
+                   *n2 = edge->n[0],
+                   *n3 = edge->n[1];
         Vec12 vs = mat_to_vec(Mat3x4(n0->v, n1->v, n2->v, n3->v));
         Mat12x12 J = bendF.first;
         Vec12 F = bendF.second;
