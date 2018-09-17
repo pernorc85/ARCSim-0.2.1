@@ -96,19 +96,7 @@ bool overlap (const BOX &box0, const BOX &box1, float thickness) {
     return box0.overlaps(dilate(box1, thickness));
 }
 
-float
-DeformBVHTree::refit()
-{
-	getRoot()->refit(_ccd);
 
-	return 0.f;
-}
-
-BOX
-DeformBVHTree::box()
-{
-	return getRoot()->_box;
-}
 
 inline vec3f norm(vec3f &p1, vec3f &p2, vec3f &p3)
 {
@@ -118,33 +106,7 @@ inline vec3f norm(vec3f &p1, vec3f &p2, vec3f &p3)
 	return n;
 }
 
-void
-DeformBVHNode::refit(bool ccd)
-{
-	if (isLeaf()) {
-		_box = face_box(getFace(), ccd);
-	} else {
-		getLeftChild()->refit(ccd);
-		getRightChild()->refit(ccd);
 
-		_box = getLeftChild()->_box + getRightChild()->_box;
-	}
-}
-
-bool
-DeformBVHNode::find(Face *face)
-{
-	if (isLeaf())
-		return getFace() == face;
-
-	if (getLeftChild()->find(face))
-		return true;
-
-	if (getRightChild()->find(face))
-		return true;
-
-	return false;
-}
 
 inline float middle_xyz(char xyz, const vec3f &p1, const vec3f &p2, const vec3f &p3)
 {
@@ -184,12 +146,12 @@ public:
 
 extern float middle_xyz(char xyz, const vec3f &p1, const vec3f &p2, const vec3f &p3);
 
-DeformBVHTree::DeformBVHTree(DeformModel &mdl, bool ccd)
+DeformBVHTree::DeformBVHTree(Mesh &mesh, bool ccd)
 {
-    _mdl = &mdl;
+    _mesh = &mesh;
     _ccd = ccd;
 
-    if (!mdl.verts.empty())
+    if (!mesh.verts.empty())
         Construct();
     else
         _root = NULL;
@@ -201,13 +163,13 @@ DeformBVHTree::Construct()
 	BOX total;
 	int count;
 
-    int num_vtx = _mdl->verts.size(),
-        num_tri = _mdl->faces.size();
+    int num_vtx = _mesh->verts.size(),
+        num_tri = _mesh->faces.size();
 
     for (unsigned int i=0; i<num_vtx; i++) {
-        total += _mdl->verts[i]->node->x;
+        total += _mesh->verts[i]->node->x;
         if (_ccd)
-            total += _mdl->verts[i]->node->x0;
+            total += _mesh->verts[i]->node->x0;
     }
 
     count = num_tri;
@@ -224,12 +186,12 @@ DeformBVHTree::Construct()
 	for (unsigned int i=0; i<num_tri; i++) {
         tri_idx++;
 
-		vec3f &p1 = _mdl->faces[i]->v[0]->node->x;
-		vec3f &p2 = _mdl->faces[i]->v[1]->node->x;
-		vec3f &p3 = _mdl->faces[i]->v[2]->node->x;
-		vec3f &pp1 = _mdl->faces[i]->v[0]->node->x0;
-		vec3f &pp2 = _mdl->faces[i]->v[1]->node->x0;
-		vec3f &pp3 = _mdl->faces[i]->v[2]->node->x0;
+		vec3f &p1 = _mesh->faces[i]->v[0]->node->x;
+		vec3f &p2 = _mesh->faces[i]->v[1]->node->x;
+		vec3f &p3 = _mesh->faces[i]->v[2]->node->x;
+		vec3f &pp1 = _mesh->faces[i]->v[0]->node->x0;
+		vec3f &pp2 = _mesh->faces[i]->v[1]->node->x0;
+		vec3f &pp3 = _mesh->faces[i]->v[2]->node->x0;
 
 		if (_ccd) {
 
@@ -245,9 +207,9 @@ DeformBVHTree::Construct()
 		}
 
 		if (pln.inside(tri_centers[tri_idx-1]))
-			face_buffer[left_idx++] = _mdl->faces[i];
+			face_buffer[left_idx++] = _mesh->faces[i];
 		else
-			face_buffer[--right_idx] = _mdl->faces[i];
+			face_buffer[--right_idx] = _mesh->faces[i];
 
 		tri_boxes[tri_idx-1] += p1;
 		tri_boxes[tri_idx-1] += p2;
@@ -265,7 +227,7 @@ DeformBVHTree::Construct()
 	//_root->_count = count;
 
 	if (count == 1) {
-		_root->_face = _mdl->faces[0];
+		_root->_face = _mesh->faces[0];
 		_root->_left = _root->_right = NULL;
 	} else {
 		if (left_idx == 0 || left_idx == count)
@@ -277,6 +239,20 @@ DeformBVHTree::Construct()
 
 	delete [] tri_boxes;
 	delete [] tri_centers;
+}
+
+float
+DeformBVHTree::refit()
+{
+	getRoot()->refit(_ccd);
+
+	return 0.f;
+}
+
+BOX
+DeformBVHTree::box()
+{
+	return getRoot()->_box;
 }
 
 DeformBVHTree::~DeformBVHTree()
@@ -367,4 +343,32 @@ DeformBVHNode::DeformBVHNode(DeformBVHNode *parent, Face **lst, unsigned int lst
 
 		}
 	}
+}
+
+void
+DeformBVHNode::refit(bool ccd)
+{
+	if (isLeaf()) {
+		_box = face_box(getFace(), ccd);
+	} else {
+		getLeftChild()->refit(ccd);
+		getRightChild()->refit(ccd);
+
+		_box = getLeftChild()->_box + getRightChild()->_box;
+	}
+}
+
+bool
+DeformBVHNode::find(Face *face)
+{
+	if (isLeaf())
+		return getFace() == face;
+
+	if (getLeftChild()->find(face))
+		return true;
+
+	if (getRightChild()->find(face))
+		return true;
+
+	return false;
 }
