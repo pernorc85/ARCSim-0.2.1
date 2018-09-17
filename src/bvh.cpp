@@ -151,16 +151,15 @@ DeformBVHTree::Construct()
 	BOX total;
 	int count;
 
-    int num_vtx = _mesh->verts.size(),
-        num_tri = _mesh->faces.size();
+    	int num_vtx = _mesh->verts.size(), num_tri = _mesh->faces.size();
 
-    for (unsigned int i=0; i<num_vtx; i++) {
-        total += _mesh->verts[i]->node->x;
-        if (_ccd)
-            total += _mesh->verts[i]->node->x0;
-    }
+    	for (unsigned int i=0; i<num_vtx; i++) {
+        	total += _mesh->verts[i]->node->x;
+        	if (_ccd)
+            	total += _mesh->verts[i]->node->x0;
+	}
 
-    count = num_tri;
+	count = num_tri;
 
 	BOX *tri_boxes = new BOX[count];
 	vec3f *tri_centers = new vec3f[count];
@@ -171,9 +170,9 @@ DeformBVHTree::Construct()
 	unsigned int left_idx = 0, right_idx = count;
 	unsigned int tri_idx = 0;
 
-    //initialize boxes for each face
+	//initialize boxes for each face
 	for (unsigned int i=0; i<num_tri; i++) {
-        tri_idx++;
+        	tri_idx++;
 
 		vec3f &p1 = _mesh->faces[i]->v[0]->node->x;
 		vec3f &p2 = _mesh->faces[i]->v[1]->node->x;
@@ -194,6 +193,9 @@ DeformBVHTree::Construct()
 				middle_xyz(2, p1, p2, p3));
 		}
 
+		//Bipartition
+		//this is the first time faces get "sorted".
+		//O(n) it is much more efficient than a sort.
 		if (pln.inside(tri_centers[tri_idx-1])) {
 			face_buffer[left_idx++] = _mesh->faces[i];
 		} else {
@@ -211,7 +213,7 @@ DeformBVHTree::Construct()
 		}
 	}
 
-    //recursively create the tree
+	//recursively create the tree
 	_root = new DeformBVHNode();
 	_root->_box = total;
 	//_root->_count = count;
@@ -223,8 +225,9 @@ DeformBVHTree::Construct()
 		if (left_idx == 0 || left_idx == count)
 			left_idx = count/2;
 
-        //simply divide face_buffer into two parts, 
-        //x, y position in space still matters, but they are handled in the "swap" step
+        	//divide face_buffer into two parts, 
+		//left_idx is determined in "bipartition" step
+        	//x, y position in space still matters, but they are handled in the "swap" step
 		_root->_left = new DeformBVHNode(_root, face_buffer, left_idx, tri_boxes, tri_centers);
 		_root->_right = new DeformBVHNode(_root, face_buffer+left_idx, count-left_idx, tri_boxes, tri_centers);
 	}
@@ -259,42 +262,42 @@ DeformBVHTree::~DeformBVHTree()
 // called by root
 DeformBVHNode::DeformBVHNode()
 {
-	_face = NULL;
-	_left = _right = NULL;
-	_parent = NULL;
-	//_count = 0;
+    _face = NULL;//it is filled only for leaf node
+    _left = _right = NULL;
+    _parent = NULL;
+    //_count = 0;
     _active = true;
 }
 
 DeformBVHNode::~DeformBVHNode()
 {
-	if (_left) delete _left;
-	if (_right) delete _right;
+    if (_left) delete _left;
+    if (_right) delete _right;
 }
 
 // called by leaf
 DeformBVHNode::DeformBVHNode(DeformBVHNode *parent, Face *face, BOX *tri_boxes, vec3f *tri_centers)
 {
-	_left = _right = NULL;
-	_parent = parent;
-	_face = face;
+    _left = _right = NULL;
+    _parent = parent;
+    _face = face;
     _box = tri_boxes[face->index];
-	//_count = 1;
+    //_count = 1;
     _active = true;
 }
 
 // called by nodes
 DeformBVHNode::DeformBVHNode(DeformBVHNode *parent, Face **faces, unsigned int face_num, BOX *tri_boxes, vec3f *tri_centers)
 {
-	assert(lst_num > 0);
+	assert(face_num > 0);
 	_left = _right = NULL;
 	_parent = parent;
 	_face = NULL;
-	//_count = lst_num;
-    _active = true;
+	//_count = face_num;
+        _active = true;
 
-	if (lst_num == 1) {
-		_face = faces[0];
+	if (face_num == 1) {
+		_face = faces[0];//filled only for leaf node
 		_box = tri_boxes[faces[0]->index];
 	} else { // try to split them
 		for (unsigned int t=0; t<face_num; t++) {
@@ -302,7 +305,7 @@ DeformBVHNode::DeformBVHNode(DeformBVHNode *parent, Face **faces, unsigned int f
 			_box += tri_boxes[i];
 		}
 
-		if (lst_num == 2) { // must split it!
+		if (face_num == 2) { // must split it!
 			_left = new DeformBVHNode(this, faces[0], tri_boxes, tri_centers);
 			_right = new DeformBVHNode(this, faces[1], tri_boxes, tri_centers);
 		} else {
@@ -311,6 +314,8 @@ DeformBVHNode::DeformBVHNode(DeformBVHNode *parent, Face **faces, unsigned int f
 
 			for (unsigned int t=0; t<face_num; t++) {
 				int i=faces[left_idx]->index;
+				//Bipartition
+				//using swap to save memory
 				if (pln.inside(tri_centers[i])) { 
 					left_idx++;
 				} else {// swap it
