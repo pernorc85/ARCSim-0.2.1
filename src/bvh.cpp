@@ -3,43 +3,33 @@
 // Modified by Rahul Narain.
 
 /*************************************************************************\
-
   Copyright 2010 The University of North Carolina at Chapel Hill.
   All Rights Reserved.
-
   Permission to use, copy, modify and distribute this software and its
   documentation for educational, research and non-profit purposes, without
    fee, and without a written agreement is hereby granted, provided that the
   above copyright notice and the following three paragraphs appear in all
   copies.
-
   IN NO EVENT SHALL THE UNIVERSITY OF NORTH CAROLINA AT CHAPEL HILL BE
   LIABLE TO ANY PARTY FOR DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR
   CONSEQUENTIAL DAMAGES, INCLUDING LOST PROFITS, ARISING OUT OF THE
   USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF THE UNIVERSITY
   OF NORTH CAROLINA HAVE BEEN ADVISED OF THE POSSIBILITY OF SUCH
   DAMAGES.
-
   THE UNIVERSITY OF NORTH CAROLINA SPECIFICALLY DISCLAIM ANY
   WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.  THE SOFTWARE
   PROVIDED HEREUNDER IS ON AN "AS IS" BASIS, AND THE UNIVERSITY OF
   NORTH CAROLINA HAS NO OBLIGATIONS TO PROVIDE MAINTENANCE, SUPPORT,
   UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
-
   The authors may be contacted via:
-
   US Mail:             GAMMA Research Group at UNC
                        Department of Computer Science
                        Sitterson Hall, CB #3175
                        University of N. Carolina
                        Chapel Hill, NC 27599-3175
-
   Phone:               (919)962-1749
-
   EMail:              geom@cs.unc.edu; tang_m@zju.edu.cn
-
-
 \**************************************************************************/
 
 #include <stdlib.h>
@@ -96,8 +86,6 @@ bool overlap (const BOX &box0, const BOX &box1, float thickness) {
     return box0.overlaps(dilate(box1, thickness));
 }
 
-
-
 inline vec3f norm(vec3f &p1, vec3f &p2, vec3f &p3)
 {
 	vec3f s = p2-p1;
@@ -105,8 +93,6 @@ inline vec3f norm(vec3f &p1, vec3f &p2, vec3f &p3)
 	vec3f n = cross(s,t);
 	return n;
 }
-
-
 
 inline float middle_xyz(char xyz, const vec3f &p1, const vec3f &p2, const vec3f &p3)
 {
@@ -118,6 +104,8 @@ inline float middle_xyz(char xyz, const vec3f &p1, const vec3f &p2, const vec3f 
 	t1 = MAX(t1, p3[xyz]);
 	return (t0+t1)*0.5f;
 }
+
+
 
 class aap {
 public:
@@ -183,6 +171,7 @@ DeformBVHTree::Construct()
 	unsigned int left_idx = 0, right_idx = count;
 	unsigned int tri_idx = 0;
 
+    //initialize boxes for each face
 	for (unsigned int i=0; i<num_tri; i++) {
         tri_idx++;
 
@@ -194,7 +183,6 @@ DeformBVHTree::Construct()
 		vec3f &pp3 = _mesh->faces[i]->v[2]->node->x0;
 
 		if (_ccd) {
-
 			tri_centers[tri_idx-1] = vec3f(
 				(middle_xyz(0, p1, p2, p3)+middle_xyz(0, pp1, pp2, pp3))*0.5f,
 				(middle_xyz(1, p1, p2, p3)+middle_xyz(1, pp1, pp2, pp3))*0.5f,
@@ -206,10 +194,11 @@ DeformBVHTree::Construct()
 				middle_xyz(2, p1, p2, p3));
 		}
 
-		if (pln.inside(tri_centers[tri_idx-1]))
+		if (pln.inside(tri_centers[tri_idx-1])) {
 			face_buffer[left_idx++] = _mesh->faces[i];
-		else
+		} else {
 			face_buffer[--right_idx] = _mesh->faces[i];
+		}
 
 		tri_boxes[tri_idx-1] += p1;
 		tri_boxes[tri_idx-1] += p2;
@@ -222,6 +211,7 @@ DeformBVHTree::Construct()
 		}
 	}
 
+    //recursively create the tree
 	_root = new DeformBVHNode();
 	_root->_box = total;
 	//_root->_count = count;
@@ -233,6 +223,8 @@ DeformBVHTree::Construct()
 		if (left_idx == 0 || left_idx == count)
 			left_idx = count/2;
 
+        //simply divide face_buffer into two parts, 
+        //x, y position in space still matters, but they are handled in the "swap" step
 		_root->_left = new DeformBVHNode(_root, face_buffer, left_idx, tri_boxes, tri_centers);
 		_root->_right = new DeformBVHNode(_root, face_buffer+left_idx, count-left_idx, tri_boxes, tri_centers);
 	}
@@ -292,7 +284,7 @@ DeformBVHNode::DeformBVHNode(DeformBVHNode *parent, Face *face, BOX *tri_boxes, 
 }
 
 // called by nodes
-DeformBVHNode::DeformBVHNode(DeformBVHNode *parent, Face **lst, unsigned int lst_num, BOX *tri_boxes, vec3f *tri_centers)
+DeformBVHNode::DeformBVHNode(DeformBVHNode *parent, Face **faces, unsigned int face_num, BOX *tri_boxes, vec3f *tri_centers)
 {
 	assert(lst_num > 0);
 	_left = _right = NULL;
@@ -302,43 +294,41 @@ DeformBVHNode::DeformBVHNode(DeformBVHNode *parent, Face **lst, unsigned int lst
     _active = true;
 
 	if (lst_num == 1) {
-		_face = lst[0];
-		_box = tri_boxes[lst[0]->index];
-	}
-	else { // try to split them
-		for (unsigned int t=0; t<lst_num; t++) {
-			int i=lst[t]->index;
+		_face = faces[0];
+		_box = tri_boxes[faces[0]->index];
+	} else { // try to split them
+		for (unsigned int t=0; t<face_num; t++) {
+			int i=faces[t]->index;
 			_box += tri_boxes[i];
 		}
 
 		if (lst_num == 2) { // must split it!
-			_left = new DeformBVHNode(this, lst[0], tri_boxes, tri_centers);
-			_right = new DeformBVHNode(this, lst[1], tri_boxes, tri_centers);
+			_left = new DeformBVHNode(this, faces[0], tri_boxes, tri_centers);
+			_right = new DeformBVHNode(this, faces[1], tri_boxes, tri_centers);
 		} else {
 			aap pln(_box);
-			unsigned int left_idx = 0, right_idx = lst_num-1;
+			unsigned int left_idx = 0, right_idx = face_num-1;
 
-			for (unsigned int t=0; t<lst_num; t++) {
-				int i=lst[left_idx]->index;
-				if (pln.inside(tri_centers[i]))
+			for (unsigned int t=0; t<face_num; t++) {
+				int i=faces[left_idx]->index;
+				if (pln.inside(tri_centers[i])) { 
 					left_idx++;
-				else {// swap it
-					Face *tmp = lst[left_idx];
-					lst[left_idx] = lst[right_idx];
-					lst[right_idx--] = tmp;
+				} else {// swap it
+					Face *tmp = faces[left_idx];
+					faces[left_idx] = faces[right_idx];
+					faces[right_idx] = tmp;
+					right_idx--;
 				}
 			}
 
-			int hal = lst_num/2;
-			if (left_idx == 0 || left_idx == lst_num)
-			{
-				_left = new DeformBVHNode(this, lst, hal, tri_boxes, tri_centers);
-				_right = new DeformBVHNode(this, lst+hal, lst_num-hal, tri_boxes, tri_centers);
+			int hal = face_num/2;
+			if (left_idx == 0 || left_idx == lst_num) {
+				_left = new DeformBVHNode(this, faces, hal, tri_boxes, tri_centers);
+				_right = new DeformBVHNode(this, faces+hal, face_num-hal, tri_boxes, tri_centers);
 
-			}
-			else {
-				_left = new DeformBVHNode(this, lst, left_idx, tri_boxes, tri_centers);
-				_right = new DeformBVHNode(this, lst+left_idx, lst_num-left_idx, tri_boxes, tri_centers);
+			} else {
+				_left = new DeformBVHNode(this, faces, left_idx, tri_boxes, tri_centers);
+				_right = new DeformBVHNode(this, faces+left_idx, face_num-left_idx, tri_boxes, tri_centers);
 			}
 
 		}
