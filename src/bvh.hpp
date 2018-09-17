@@ -305,7 +305,7 @@ friend class DeformBVHTree;
 
 class DeformBVHTree {
 public:
-	DeformModel		*_mdl;
+	Mesh		*_mesh;
 	DeformBVHNode	*_root;
 	Face **face_buffer;
 
