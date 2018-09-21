@@ -156,6 +156,10 @@ pair<Mat12x12,Vec12> bending_force (const Edge *edge) {
     Vec3 n0 = nor<s>(face0), n1 = nor<s>(face1);
     Vec2 w_f0 = barycentric_weights(p0, p2, p3),
          w_f1 = barycentric_weights(p1, p2, p3);
+    //dtheta actually means dtheta/dv_i,j
+    // i = 0,1,2,3  one of the four nodes involved
+    // j = 0,1,2    one of the three dimensions
+    //dtheta/dt = u0*v0 + u1*v1 + u2*v2 + u3*v3 (Bridson 2003)
     Vec12 dtheta = mat_to_vec(Mat3x4(n0/h0,
                                      n1/h1,
                                      -(w_f0[0]*n0/h0 + w_f1[0]*n1/h1),
