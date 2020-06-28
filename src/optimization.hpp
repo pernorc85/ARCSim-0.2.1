@@ -80,18 +80,22 @@ void l_bfgs_method (const NLOpt &problem,
                     OptOptions opts=OptOptions(),
                     bool verbose=false);
 
+//implemented in lsnewton.cpp
 void line_search_newtons_method (const NLOpt &problem,
                                  OptOptions opts=OptOptions(),
                                  bool verbose=false);
 
+//implemented in nlcg.cpp
 void nonlinear_conjugate_gradient_method (const NLOpt &problem,
                                           OptOptions opts=OptOptions(),
                                           bool verbose=false);
 
+//implemented in trustregion.cpp
 void trust_region_method (const NLOpt &problem,
                           OptOptions opts=OptOptions(),
                           bool verbose=false);
 
+//implemented in auglag.cpp
 void augmented_lagrangian_method (const NLConOpt &problem,
                                   OptOptions opts=OptOptions(),
                                   bool verbose=false);
